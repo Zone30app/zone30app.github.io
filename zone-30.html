@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0d0f14">
+<title>Zone 30</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+/* ── TOKENS ──────────────────────────────────────────── */
+:root {
+  --bg:        #0a0b0f;
+  --card:      #13151c;
+  --card2:     #1a1d28;
+  --border:    #252836;
+  --border2:   #2e3245;
+  --accent:    #f5c518;
+  --accent-dim:rgba(245,197,24,.12);
+  --red:       #ef4444;
+  --red-dim:   rgba(239,68,68,.12);
+  --green:     #22c55e;
+  --blue:      #3b82f6;
+  --text:      #eaedf5;
+  --muted:     #5c607a;
+  --muted2:    #3a3d52;
+  --r:         14px;
+  --r-sm:      8px;
+}
+
+/* ── RESET ───────────────────────────────────────────── */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Inter',sans-serif;
+  height:100dvh;display:flex;flex-direction:column;
+  overflow:hidden;user-select:none;
+}
+
+/* ── HEADER ──────────────────────────────────────────── */
+#hdr{
+  background:var(--card);border-bottom:1px solid var(--border);
+  padding:11px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;z-index:900;
+}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:21px;letter-spacing:-.5px;}
+.logo em{color:var(--accent);font-style:normal;}
+.logo sup{font-size:10px;color:var(--muted);font-family:'Inter',sans-serif;font-weight:500;margin-left:2px;}
+
+#sched-pill{
+  font-size:10px;font-weight:500;letter-spacing:.3px;
+  border-radius:20px;padding:5px 10px;border:1px solid var(--border2);
+  color:var(--muted);background:var(--card2);
+  transition:color .3s,border-color .3s;
+  line-height:1.6;text-align:right;
+}
+#sched-pill.on {color:var(--green);border-color:rgba(34,197,94,.35);}
+#sched-pill.off{color:#f87171;border-color:rgba(239,68,68,.3);}
+
+/* ── TOP AD SLOT ─────────────────────────────────────── */
+#ad-top{
+  height:52px;background:var(--card2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;gap:8px;
+}
+/* ↑ Replace contents with your Google AdSense <ins> tag */
+
+/* ── MAP ─────────────────────────────────────────────── */
+#map{flex:1;width:100%;z-index:1;}
+.leaflet-control-attribution{display:none!important;}
+
+/* ── SPEED WIDGET ────────────────────────────────────── */
+#spd-wrap{
+  position:absolute;bottom:214px;left:16px;z-index:400;
+  pointer-events:none;
+}
+#spd-ring{
+  width:100px;height:100px;border-radius:50%;
+  background:rgba(10,11,15,.88);
+  border:3px solid var(--green);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:0 0 22px rgba(34,197,94,.2);
+  transition:border-color .35s,box-shadow .35s;
+  backdrop-filter:blur(10px);
+}
+#spd-ring.warn  {border-color:var(--accent);box-shadow:0 0 26px rgba(245,197,24,.28);}
+#spd-ring.alert {border-color:var(--red);box-shadow:0 0 36px rgba(239,68,68,.5);animation:pulse .85s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 24px rgba(239,68,68,.4);}50%{box-shadow:0 0 52px rgba(239,68,68,.8);}}
+#spd-num{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;line-height:1;}
+#spd-lbl{font-size:9px;color:var(--muted);letter-spacing:1.2px;margin-top:2px;}
+
+/* ── SPEED LIMIT SIGN ────────────────────────────────── */
+#sign{
+  position:absolute;bottom:214px;right:16px;z-index:400;
+  width:66px;height:66px;border-radius:50%;
+  background:#fff;border:5px solid #c00;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:0 4px 18px rgba(0,0,0,.55);pointer-events:none;
+}
+#sign.show{display:flex;}
+#sign .s-max{font-size:8px;font-weight:700;color:#c00;letter-spacing:.5px;}
+#sign .s-num{font-family:'Syne',sans-serif;font-size:23px;font-weight:800;color:#c00;line-height:1;}
+
+/* ── SETTINGS BUTTON ─────────────────────────────────── */
+#gear-btn{
+  position:absolute;top:80px;right:14px;z-index:500;
+  width:40px;height:40px;border-radius:10px;
+  background:rgba(19,21,28,.9);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;cursor:pointer;backdrop-filter:blur(8px);
+  transition:border-color .2s;
+}
+#gear-btn:hover{border-color:var(--accent);}
+
+/* ── SETTINGS PANEL ──────────────────────────────────── */
+#prefs{
+  position:absolute;top:128px;right:14px;z-index:600;
+  background:var(--card);border:1px solid var(--border2);
+  border-radius:var(--r);padding:16px;width:236px;
+  display:none;box-shadow:0 10px 40px rgba(0,0,0,.6);
+}
+#prefs.open{display:block;}
+.prefs-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;
+  color:var(--accent);margin-bottom:14px;letter-spacing:-.2px;}
+.pref-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 0;border-bottom:1px solid var(--border);
+}
+.pref-row:last-child{border-bottom:none;}
+.pref-text .pl{font-size:12px;font-weight:500;}
+.pref-text .ps{font-size:10px;color:var(--muted);margin-top:2px;}
+
+/* toggle */
+.tog{position:relative;width:42px;height:24px;flex-shrink:0;}
+.tog input{opacity:0;width:0;height:0;}
+.tog-track{
+  position:absolute;inset:0;background:var(--card2);
+  border-radius:24px;cursor:pointer;transition:.25s;
+  border:1px solid var(--border2);
+}
+.tog-track:before{
+  content:"";position:absolute;width:18px;height:18px;
+  left:2px;bottom:2px;background:var(--muted);
+  border-radius:50%;transition:.25s;
+}
+.tog input:checked~.tog-track{background:var(--accent);border-color:var(--accent);}
+.tog input:checked~.tog-track:before{transform:translateX(18px);background:#000;}
+
+/* ── POPUP ALERT ─────────────────────────────────────── */
+#popup{
+  position:absolute;top:78px;left:12px;right:12px;z-index:700;
+  border-radius:var(--r);padding:15px;
+  display:none;flex-direction:column;gap:10px;
+  box-shadow:0 10px 48px rgba(0,0,0,.65);
+  animation:drop .28s ease;
+}
+#popup.show{display:flex;}
+#popup.is-warn  {background:linear-gradient(135deg,#78350f,#451a03);border:1px solid #d97706;}
+#popup.is-alert {background:linear-gradient(135deg,#7f1d1d,#450a0a);border:1px solid var(--red);}
+@keyframes drop{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
+.pop-row{display:flex;align-items:center;gap:12px;}
+.pop-ico{font-size:30px;flex-shrink:0;}
+.pop-body{flex:1;}
+.pop-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;letter-spacing:-.2px;}
+.pop-sub{font-size:11px;opacity:.8;margin-top:3px;}
+.pop-badge{
+  font-family:'Syne',sans-serif;font-size:30px;font-weight:800;
+  background:rgba(0,0,0,.3);border-radius:10px;padding:6px 11px;line-height:1;flex-shrink:0;
+}
+.pop-track{height:3px;border-radius:2px;background:rgba(255,255,255,.1);}
+.pop-fill{height:100%;border-radius:2px;background:rgba(255,255,255,.55);transition:width .5s;}
+
+/* ── OFF-HOURS OVERLAY ───────────────────────────────── */
+#offhours{
+  display:none;position:absolute;inset:0;z-index:800;
+  background:rgba(10,11,15,.93);
+  align-items:center;justify-content:center;padding:24px;
+}
+#offhours.show{display:flex;}
+.oh-card{
+  background:var(--card);border:1px solid var(--border2);
+  border-radius:20px;padding:30px 24px;
+  text-align:center;max-width:320px;width:100%;
+}
+.oh-card .oh-ico{font-size:50px;margin-bottom:14px;}
+.oh-card h2{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;margin-bottom:8px;}
+.oh-card p{font-size:12px;color:var(--muted);line-height:1.85;}
+.oh-pills{margin-top:14px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
+.oh-pill{
+  background:var(--accent-dim);border:1px solid rgba(245,197,24,.28);
+  color:var(--accent);border-radius:20px;padding:5px 13px;font-size:11px;font-weight:500;
+}
+.oh-btn{
+  margin-top:18px;width:100%;padding:11px;border-radius:10px;
+  border:1px solid var(--border2);background:transparent;
+  color:var(--text);font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;
+  transition:border-color .2s;
+}
+.oh-btn:hover{border-color:var(--muted);}
+
+/* ── BOTTOM PANEL ────────────────────────────────────── */
+#bottom{
+  background:var(--card);border-top:1px solid var(--border);
+  padding:12px 16px 20px;flex-shrink:0;z-index:900;
+}
+#ad-bottom{
+  background:var(--card2);border:1px solid var(--border);
+  border-radius:var(--r-sm);height:50px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:12px;gap:8px;
+}
+/* ↑ Replace with your AdSense <ins> tag */
+
+#status-row{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+#dot{
+  width:9px;height:9px;border-radius:50%;
+  background:var(--muted2);flex-shrink:0;transition:background .3s;
+}
+#dot.on {background:var(--green);box-shadow:0 0 7px var(--green);}
+#dot.spin{background:var(--accent);animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+#status-txt{font-size:11px;color:var(--muted);flex:1;}
+#count-pill{
+  font-size:10px;font-weight:500;color:var(--accent);
+  background:var(--accent-dim);border:1px solid rgba(245,197,24,.22);
+  border-radius:6px;padding:3px 9px;display:none;
+}
+
+#btn-main{
+  width:100%;padding:14px;border:none;border-radius:var(--r);
+  background:var(--accent);color:#000;
+  font-family:'Syne',sans-serif;font-size:16px;font-weight:800;
+  cursor:pointer;letter-spacing:-.3px;transition:transform .15s,filter .15s;
+}
+#btn-main:active{transform:scale(.97);}
+#btn-main.stop{background:var(--red);color:#fff;}
+
+#nearest{margin-top:8px;font-size:10px;color:var(--muted);
+  min-height:14px;text-align:center;letter-spacing:.2px;}
+
+/* ── AD LABELS ───────────────────────────────────────── */
+.ad-lbl{font-size:9px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;}
+.ad-placeholder{font-size:11px;color:var(--border2);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="hdr">
+  <div class="logo">Zone<em>30</em><sup>™</sup></div>
+  <div id="sched-pill">MON–FRI · 7:00–17:30<br>SEP 1 – JUN 30</div>
+</div>
+
+<!-- TOP AD SLOT -->
+<div id="ad-top">
+  <span class="ad-lbl">Advertisement</span>
+  <span class="ad-placeholder">[ Paste your AdSense 320×50 tag here ]</span>
+</div>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- SPEED WIDGET -->
+<div id="spd-wrap">
+  <div id="spd-ring">
+    <div id="spd-num">0</div>
+    <div id="spd-lbl">KM/H</div>
+  </div>
+</div>
+
+<!-- SPEED LIMIT SIGN -->
+<div id="sign">
+  <div class="s-max">MAX</div>
+  <div class="s-num">30</div>
+</div>
+
+<!-- GEAR BUTTON -->
+<div id="gear-btn" onclick="togglePrefs()">⚙️</div>
+
+<!-- PREFERENCES PANEL -->
+<div id="prefs">
+  <div class="prefs-title">Alert preferences</div>
+
+  <div class="pref-row">
+    <div class="pref-text">
+      <div class="pl">Sound</div>
+      <div class="ps">Beep on zone entry</div>
+    </div>
+    <label class="tog">
+      <input type="checkbox" id="p-sound" checked onchange="savePrefs()">
+      <div class="tog-track"></div>
+    </label>
+  </div>
+
+  <div class="pref-row">
+    <div class="pref-text">
+      <div class="pl">Vibration</div>
+      <div class="ps">Haptic feedback</div>
+    </div>
+    <label class="tog">
+      <input type="checkbox" id="p-vibe" checked onchange="savePrefs()">
+      <div class="tog-track"></div>
+    </label>
+  </div>
+
+  <div class="pref-row">
+    <div class="pref-text">
+      <div class="pl">Pop-up banner</div>
+      <div class="ps">Visual alert on screen</div>
+    </div>
+    <label class="tog">
+      <input type="checkbox" id="p-popup" checked onchange="savePrefs()">
+      <div class="tog-track"></div>
+    </label>
+  </div>
+
+  <div class="pref-row">
+    <div class="pref-text">
+      <div class="pl">Early warning</div>
+      <div class="ps">Alert 450 m before zone</div>
+    </div>
+    <label class="tog">
+      <input type="checkbox" id="p-early" checked onchange="savePrefs()">
+      <div class="tog-track"></div>
+    </label>
+  </div>
+</div>
+
+<!-- POPUP ALERT -->
+<div id="popup">
+  <div class="pop-row">
+    <div class="pop-ico">🏫</div>
+    <div class="pop-body">
+      <div class="pop-title" id="pop-title">SCHOOL ZONE</div>
+      <div class="pop-sub"  id="pop-sub">Reduce speed now</div>
+    </div>
+    <div class="pop-badge">30</div>
+  </div>
+  <div class="pop-track"><div class="pop-fill" id="pop-fill" style="width:100%"></div></div>
+</div>
+
+<!-- OFF-HOURS OVERLAY -->
+<div id="offhours">
+  <div class="oh-card">
+    <div class="oh-ico" id="oh-ico">🏖️</div>
+    <h2 id="oh-title">Outside active hours</h2>
+    <p id="oh-body">School zone speed restrictions apply Monday–Friday, 7:00 AM to 5:30 PM, from September 1st to June 30th.</p>
+    <div class="oh-pills">
+      <div class="oh-pill">Mon – Fri</div>
+      <div class="oh-pill">7:00 – 17:30</div>
+      <div class="oh-pill">Sep 1 → Jun 30</div>
+    </div>
+    <button class="oh-btn" onclick="dismissOverlay()">Understood — monitor anyway</button>
+  </div>
+</div>
+
+<!-- BOTTOM PANEL -->
+<div id="bottom">
+  <!-- BOTTOM AD SLOT -->
+  <div id="ad-bottom">
+    <span class="ad-lbl">Ad</span>
+    <span class="ad-placeholder">[ Paste your AdSense 320×50 tag here ]</span>
+  </div>
+
+  <div id="status-row">
+    <div id="dot"></div>
+    <div id="status-txt">Tap Start to begin monitoring</div>
+    <div id="count-pill"></div>
+  </div>
+
+  <button id="btn-main" onclick="toggleTracking()">▶ Start monitoring</button>
+  <div id="nearest"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════
+const CFG = {
+  alertM:  250,   // inner alert zone (metres)
+  warnM:   450,   // outer warning zone
+  searchM: 5000,  // school search radius
+  overpass: 'https://overpass-api.de/api/interpreter'
+};
+
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let map, uMarker, accCircle, watchId = null;
+let schools = [], sMarkers = [], sCircles = [];
+let tracking = false, lastAlertKey = null, actx = null;
+let prevPos = null, prevTime = null;
+let prefsOpen = false;
+let prefs = { sound:true, vibe:true, popup:true, early:true };
+
+// ═══════════════════════════════════════════════════════
+//  SCHEDULE  (Sep 1 – Jun 30 · Mon–Fri · 07:00–17:30)
+// ═══════════════════════════════════════════════════════
+function scheduleActive() {
+  const d  = new Date();
+  const mo = d.getMonth() + 1;     // 1-12
+  const wd = d.getDay();            // 0=Sun
+  const t  = d.getHours()*60 + d.getMinutes();
+  const inSeason  = !(mo === 7 || mo === 8);
+  const isWeekday = wd >= 1 && wd <= 5;
+  const inHours   = t >= 420 && t <= 1050;   // 7:00–17:30
+  return inSeason && isWeekday && inHours;
+}
+
+function whyInactive() {
+  const d  = new Date();
+  const mo = d.getMonth() + 1;
+  const wd = d.getDay();
+  const t  = d.getHours()*60 + d.getMinutes();
+  const hh = d.getHours(), mm = String(d.getMinutes()).padStart(2,'0');
+  if (mo===7||mo===8) return { ico:'🏖️', title:'Summer break',
+    body:'Restrictions are paused in July & August. They resume September 1st.' };
+  if (wd===0||wd===6) return { ico:'🛋️', title:'Weekend',
+    body:'School zone alerts apply Monday to Friday only. Enjoy your weekend!' };
+  if (t < 420) return { ico:'🌙', title:'Before school hours',
+    body:`Monitoring activates at 7:00 AM. It's currently ${hh}:${mm}.` };
+  return { ico:'🌆', title:'After school hours',
+    body:`Restrictions ended at 5:30 PM. Monitoring resumes the next school day at 7:00 AM.` };
+}
+
+function refreshScheduleBadge() {
+  const el = document.getElementById('sched-pill');
+  el.classList.toggle('on',  scheduleActive());
+  el.classList.toggle('off', !scheduleActive());
+}
+
+// ═══════════════════════════════════════════════════════
+//  PREFERENCES
+// ═══════════════════════════════════════════════════════
+function loadPrefs() {
+  try { const s = localStorage.getItem('z30');
+    if (s) prefs = {...prefs, ...JSON.parse(s)}; } catch(_) {}
+  document.getElementById('p-sound').checked = prefs.sound;
+  document.getElementById('p-vibe').checked  = prefs.vibe;
+  document.getElementById('p-popup').checked = prefs.popup;
+  document.getElementById('p-early').checked = prefs.early;
+}
+function savePrefs() {
+  prefs.sound = document.getElementById('p-sound').checked;
+  prefs.vibe  = document.getElementById('p-vibe').checked;
+  prefs.popup = document.getElementById('p-popup').checked;
+  prefs.early = document.getElementById('p-early').checked;
+  try { localStorage.setItem('z30', JSON.stringify(prefs)); } catch(_) {}
+}
+function togglePrefs() {
+  prefsOpen = !prefsOpen;
+  document.getElementById('prefs').classList.toggle('open', prefsOpen);
+}
+document.addEventListener('click', e => {
+  if (prefsOpen && !e.target.closest('#prefs') && !e.target.closest('#gear-btn')) {
+    prefsOpen = false;
+    document.getElementById('prefs').classList.remove('open');
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+//  MAP
+// ═══════════════════════════════════════════════════════
+function initMap() {
+  map = L.map('map', { zoomControl:false, attributionControl:false, center:[0,0], zoom:2 });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    { maxZoom:19 }).addTo(map);
+  loadPrefs();
+  refreshScheduleBadge();
+  setInterval(refreshScheduleBadge, 60000);
+}
+
+// ═══════════════════════════════════════════════════════
+//  OFF-HOURS OVERLAY
+// ═══════════════════════════════════════════════════════
+function showOffHours() {
+  const r = whyInactive();
+  document.getElementById('oh-ico').textContent   = r.ico;
+  document.getElementById('oh-title').textContent = r.title;
+  document.getElementById('oh-body').textContent  = r.body;
+  document.getElementById('offhours').classList.add('show');
+}
+function dismissOverlay() {
+  document.getElementById('offhours').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════
+//  AUDIO  (Web Audio API — no external dependency)
+// ═══════════════════════════════════════════════════════
+function ensureAudio() {
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === 'suspended') actx.resume();
+}
+function playAlert(type) {
+  if (!prefs.sound) return;
+  ensureAudio();
+  const now = actx.currentTime;
+  const seqs = {
+    warn:  [{f:820,t:0,d:.14},{f:980,t:.18,d:.14}],
+    alert: [{f:920,t:0,d:.1},{f:700,t:.13,d:.1},{f:920,t:.26,d:.1},
+            {f:700,t:.39,d:.1},{f:1150,t:.52,d:.22}]
+  };
+  (seqs[type] || seqs.warn).forEach(({f,t,d}) => {
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.connect(g); g.connect(actx.destination);
+    o.frequency.value = f; o.type = 'sine';
+    g.gain.setValueAtTime(0, now+t);
+    g.gain.linearRampToValueAtTime(0.38, now+t+.025);
+    g.gain.linearRampToValueAtTime(0, now+t+d);
+    o.start(now+t); o.stop(now+t+d+.06);
+  });
+}
+function vibrate(type) {
+  if (!prefs.vibe || !navigator.vibrate) return;
+  navigator.vibrate(type === 'alert' ? [200,90,200,90,380] : [140,70,140]);
+}
+
+// ═══════════════════════════════════════════════════════
+//  OVERPASS — fetch schools around user
+// ═══════════════════════════════════════════════════════
+async function fetchSchools(lat, lon) {
+  setStatus('spin', 'Searching for schools...');
+  const q = `[out:json][timeout:25];(
+    node["amenity"~"school|kindergarten|college|university"]["name"](around:${CFG.searchM},${lat},${lon});
+    way["amenity"~"school|kindergarten|college|university"]["name"](around:${CFG.searchM},${lat},${lon});
+  );out center;`;
+  try {
+    const res  = await fetch(CFG.overpass, {method:'POST', body:'data='+encodeURIComponent(q)});
+    const data = await res.json();
+    schools = data.elements.map(el => ({
+      id:   el.id,
+      name: el.tags?.name || 'Educational institution',
+      lat:  el.lat  ?? el.center?.lat,
+      lon:  el.lon  ?? el.center?.lon
+    })).filter(s => s.lat && s.lon);
+    renderMarkers();
+    renderZones();
+    const n = schools.length;
+    const pill = document.getElementById('count-pill');
+    pill.textContent = `${n} school${n!==1?'s':''}`;
+    pill.style.display = n ? 'block' : 'none';
+    setStatus('on', `Monitoring · ${n} school${n!==1?'s':''} nearby`);
+  } catch(_) {
+    setStatus('on', 'Could not load schools — check connection');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  MAP MARKERS & ZONES
+// ═══════════════════════════════════════════════════════
+function renderMarkers() {
+  sMarkers.forEach(m => map.removeLayer(m)); sMarkers = [];
+  schools.forEach(s => {
+    const ico = L.divIcon({ className:'',
+      html:`<div style="width:22px;height:22px;border-radius:50%;background:rgba(245,197,24,.88);border:2px solid #f5c518;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 0 10px rgba(245,197,24,.55);">🏫</div>`,
+      iconSize:[22,22], iconAnchor:[11,11] });
+    sMarkers.push(
+      L.marker([s.lat,s.lon],{icon:ico})
+       .bindPopup(`<b>${s.name}</b><br><small>Speed limit: 30 km/h</small>`)
+       .addTo(map)
+    );
+  });
+}
+function renderZones() {
+  sCircles.forEach(c => map.removeLayer(c)); sCircles = [];
+  schools.forEach(s => {
+    sCircles.push(
+      L.circle([s.lat,s.lon],{radius:CFG.warnM,
+        color:'rgba(245,197,24,.28)',fillColor:'rgba(245,197,24,.04)',
+        fillOpacity:1,weight:1,dashArray:'5,4'}).addTo(map),
+      L.circle([s.lat,s.lon],{radius:CFG.alertM,
+        color:'rgba(239,68,68,.45)',fillColor:'rgba(239,68,68,.07)',
+        fillOpacity:1,weight:1.5}).addTo(map)
+    );
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  GPS TRACKING
+// ═══════════════════════════════════════════════════════
+function toggleTracking() {
+  if (!tracking) startTracking(); else stopTracking();
+}
+
+function startTracking() {
+  if (!navigator.geolocation) { alert('Geolocation is not supported by your browser.'); return; }
+  if (!scheduleActive()) showOffHours();
+  tracking = true;
+  document.getElementById('btn-main').textContent = '⏹ Stop monitoring';
+  document.getElementById('btn-main').classList.add('stop');
+  setStatus('spin','Getting your location...');
+  watchId = navigator.geolocation.watchPosition(onPos, onErr,
+    { enableHighAccuracy:true, maximumAge:2000, timeout:15000 });
+}
+
+function stopTracking() {
+  tracking = false;
+  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  document.getElementById('btn-main').textContent = '▶ Start monitoring';
+  document.getElementById('btn-main').classList.remove('stop');
+  document.getElementById('spd-num').textContent = '0';
+  document.getElementById('spd-ring').className  = '';
+  document.getElementById('sign').classList.remove('show');
+  document.getElementById('count-pill').style.display = 'none';
+  document.getElementById('nearest').textContent = '';
+  hidePopup();
+  setStatus('','Tap Start to begin monitoring');
+}
+
+function onPos(pos) {
+  const { latitude:lat, longitude:lon, accuracy } = pos.coords;
+  const now = Date.now();
+
+  // Speed (prefer GPS speed, fall back to calculated)
+  let kmh = 0;
+  if (pos.coords.speed !== null && pos.coords.speed >= 0) {
+    kmh = Math.round(pos.coords.speed * 3.6);
+  } else if (prevPos && prevTime) {
+    const dt = (now - prevTime) / 1000;
+    if (dt > 0.4 && dt < 12) {
+      kmh = Math.round((haversine(prevPos.lat,prevPos.lon,lat,lon)/dt)*3.6);
+    }
+  }
+  prevPos = {lat,lon}; prevTime = now;
+  document.getElementById('spd-num').textContent = kmh;
+
+  // User dot
+  const ico = L.divIcon({ className:'',
+    html:`<div style="width:18px;height:18px;border-radius:50%;background:${CFG.blue||'#3b82f6'};border:3px solid #fff;box-shadow:0 0 14px rgba(59,130,246,.85);"></div>`,
+    iconSize:[18,18], iconAnchor:[9,9] });
+  if (!uMarker) {
+    uMarker = L.marker([lat,lon],{icon:ico,zIndexOffset:1000}).addTo(map);
+    map.setView([lat,lon],16);
+    fetchSchools(lat,lon);
+  } else {
+    uMarker.setLatLng([lat,lon]);
+    uMarker.setIcon(ico);
+  }
+  if (accCircle) map.removeLayer(accCircle);
+  accCircle = L.circle([lat,lon],{
+    radius:Math.min(accuracy,60),color:'rgba(59,130,246,.28)',
+    fillColor:'rgba(59,130,246,.07)',fillOpacity:1,weight:1}).addTo(map);
+  map.panTo([lat,lon],{animate:true,duration:.5});
+
+  // Only trigger alerts when schedule is active
+  if (scheduleActive()) {
+    checkZones(lat, lon);
+  } else {
+    document.getElementById('spd-ring').className = '';
+    document.getElementById('sign').classList.remove('show');
+    hidePopup();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  ZONE DETECTION
+// ═══════════════════════════════════════════════════════
+function checkZones(lat, lon) {
+  if (!schools.length) return;
+
+  // Find nearest school
+  let nearest = null, minD = Infinity;
+  schools.forEach(s => {
+    const d = haversine(lat, lon, s.lat, s.lon);
+    if (d < minD) { minD = d; nearest = s; }
+  });
+
+  const ring = document.getElementById('spd-ring');
+  const sign = document.getElementById('sign');
+
+  if (minD <= CFG.alertM) {
+    // ── INSIDE ZONE ──
+    ring.className = 'alert';
+    sign.classList.add('show');
+    if (lastAlertKey !== nearest.id + ':A') {
+      lastAlertKey = nearest.id + ':A';
+      playAlert('alert');
+      vibrate('alert');
+    }
+    prefs.popup ? showPopup('alert', nearest, minD) : hidePopup();
+
+  } else if (minD <= CFG.warnM && prefs.early) {
+    // ── APPROACHING ──
+    ring.className = 'warn';
+    sign.classList.remove('show');
+    if (lastAlertKey !== nearest.id + ':W') {
+      lastAlertKey = nearest.id + ':W';
+      playAlert('warn');
+      vibrate('warn');
+    }
+    prefs.popup ? showPopup('warn', nearest, minD) : hidePopup();
+
+  } else {
+    // ── CLEAR ──
+    ring.className = '';
+    sign.classList.remove('show');
+    lastAlertKey = null;
+    hidePopup();
+  }
+
+  document.getElementById('nearest').textContent =
+    nearest ? `📍 ${nearest.name}  ·  ${Math.round(minD)} m` : '';
+}
+
+// ═══════════════════════════════════════════════════════
+//  POPUP
+// ═══════════════════════════════════════════════════════
+function showPopup(type, school, dist) {
+  const el = document.getElementById('popup');
+  el.className = (type==='alert' ? 'is-alert' : 'is-warn') + ' show';
+  document.getElementById('pop-title').textContent =
+    type === 'alert' ? '🚨 SCHOOL ZONE' : '⚠️ ZONE AHEAD';
+  document.getElementById('pop-sub').textContent =
+    `${school.name}  ·  ${Math.round(dist)} m`;
+  const pct = type === 'alert'
+    ? Math.round((1 - dist/CFG.alertM)*100)
+    : Math.round((1 - (dist-CFG.alertM)/(CFG.warnM-CFG.alertM))*100);
+  document.getElementById('pop-fill').style.width = Math.max(8,pct)+'%';
+}
+function hidePopup() {
+  document.getElementById('popup').classList.remove('show');
+}
+
+function onErr(err) {
+  const msgs = {
+    1: 'Location permission denied. Please enable it in your browser settings.',
+    2: 'Unable to determine your location.',
+    3: 'Location request timed out.'
+  };
+  setStatus('', msgs[err.code] || 'GPS error');
+  stopTracking();
+}
+
+// ═══════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════
+function haversine(a,b,c,d){
+  const R=6371000,f1=a*Math.PI/180,f2=c*Math.PI/180,
+        df=(c-a)*Math.PI/180,dl=(d-b)*Math.PI/180,
+        x=Math.sin(df/2)**2+Math.cos(f1)*Math.cos(f2)*Math.sin(dl/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function setStatus(type, msg) {
+  const d = document.getElementById('dot');
+  d.className = type==='on'?'on':type==='spin'?'spin':'';
+  document.getElementById('status-txt').textContent = msg;
+}
+
+// ── GO ────────────────────────────────────────────────
+initMap();
+</script>
+</body>
+</html>
