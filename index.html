@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0d0f14">
 <title>Zone 30</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23f5c518'/><text x='50' y='58' font-size='42' font-weight='900' text-anchor='middle' font-family='Arial Black,sans-serif' fill='%23000'>30</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23f5c518'/><text x='50' y='58' font-size='42' font-weight='900' text-anchor='middle' font-family='Arial Black,sans-serif' fill='%23000'>30</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -250,8 +252,216 @@ body{
 </head>
 <body>
 
+<!-- ═══════════════════════════════════════════════════
+     LANDING PAGE — shown on first load, hidden on launch
+     Google AdSense requires real publisher content
+     ═══════════════════════════════════════════════════ -->
+<div id="landing">
+<style>
+#landing {
+  position:fixed;inset:0;z-index:9999;
+  background:#0a0b0f;color:#eaedf5;
+  font-family:'Inter',sans-serif;
+  overflow-y:auto;
+  display:flex;flex-direction:column;
+}
+#landing header {
+  background:#13151c;border-bottom:1px solid #252836;
+  padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:10;flex-shrink:0;
+}
+#landing .logo {font-family:'Syne',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.5px;}
+#landing .logo em {color:#f5c518;font-style:normal;}
+#landing .hero {
+  padding:40px 24px 32px;text-align:center;
+  border-bottom:1px solid #252836;
+}
+#landing .hero-icon {
+  width:90px;height:90px;border-radius:50%;background:#f5c518;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:34px;color:#000;
+  margin:0 auto 20px;
+}
+#landing h1 {font-family:'Syne',sans-serif;font-size:26px;font-weight:800;
+  letter-spacing:-.5px;margin-bottom:12px;line-height:1.2;}
+#landing .tagline {font-size:14px;color:#8b8fa8;line-height:1.8;max-width:320px;margin:0 auto;}
+
+#landing .ad-landing {
+  background:#1a1d28;border-top:1px solid #252836;border-bottom:1px solid #252836;
+  min-height:100px;display:flex;align-items:center;justify-content:center;
+  padding:10px;flex-direction:column;gap:6px;
+}
+#landing .ad-lbl-s {font-size:9px;color:#3a3d52;letter-spacing:1px;text-transform:uppercase;}
+
+#landing .content {padding:28px 20px;max-width:480px;margin:0 auto;width:100%;}
+#landing h2 {font-family:'Syne',sans-serif;font-size:17px;font-weight:700;
+  margin-bottom:16px;color:#f5c518;}
+#landing .feature-list {list-style:none;display:flex;flex-direction:column;gap:14px;margin-bottom:32px;}
+#landing .feature-list li {
+  display:flex;align-items:flex-start;gap:14px;
+  background:#13151c;border:1px solid #252836;
+  border-radius:12px;padding:14px;
+}
+#landing .feat-ico {font-size:22px;flex-shrink:0;margin-top:1px;}
+#landing .feat-text strong {display:block;font-size:13px;font-weight:600;margin-bottom:3px;}
+#landing .feat-text span {font-size:12px;color:#8b8fa8;line-height:1.7;}
+
+#landing .info-block {
+  background:#13151c;border:1px solid #252836;border-radius:12px;
+  padding:16px;margin-bottom:24px;
+}
+#landing .info-block h3 {font-size:13px;font-weight:600;margin-bottom:10px;color:#eaedf5;}
+#landing .info-row {display:flex;justify-content:space-between;align-items:center;
+  padding:7px 0;border-bottom:1px solid #1e2130;font-size:12px;}
+#landing .info-row:last-child {border-bottom:none;}
+#landing .info-row .label {color:#8b8fa8;}
+#landing .info-row .val {color:#f5c518;font-weight:500;}
+
+#landing .faq {margin-bottom:28px;}
+#landing .faq h2 {font-family:'Syne',sans-serif;font-size:17px;font-weight:700;
+  margin-bottom:16px;color:#f5c518;}
+#landing .faq-item {margin-bottom:14px;}
+#landing .faq-q {font-size:13px;font-weight:600;margin-bottom:5px;color:#eaedf5;}
+#landing .faq-a {font-size:12px;color:#8b8fa8;line-height:1.8;}
+
+#landing .disclaimer {
+  font-size:11px;color:#5c607a;line-height:1.8;
+  background:#13151c;border:1px solid #252836;
+  border-radius:10px;padding:14px;margin-bottom:28px;
+}
+
+#landing .cta-wrap {
+  position:sticky;bottom:0;background:#0a0b0f;
+  border-top:1px solid #252836;padding:16px 20px 24px;
+}
+#landing .btn-launch {
+  width:100%;padding:15px;border:none;border-radius:12px;
+  background:#f5c518;color:#000;
+  font-family:'Syne',sans-serif;font-size:17px;font-weight:800;
+  cursor:pointer;letter-spacing:-.3px;
+}
+#landing .btn-launch:active {transform:scale(.98);}
+#landing .cta-sub {font-size:11px;color:#5c607a;text-align:center;margin-top:8px;}
+</style>
+
+<header>
+  <div class="logo">Zone<em>30</em></div>
+  <div style="font-size:11px;color:#5c607a;">Free · No signup</div>
+</header>
+
+<div class="hero">
+  <div class="hero-icon">30</div>
+  <h1>Avoid fines in school zones</h1>
+  <p class="tagline">Zone 30 alerts you when you're approaching a school or educational institution where the speed limit drops to 30 km/h — before it's too late.</p>
+</div>
+
+<!-- AD SLOT — landing page -->
+<div class="ad-landing">
+  <span class="ad-lbl-s">Advertisement</span>
+  <ins class="adsbygoogle"
+       style="display:inline-block;width:320px;height:100px"
+       data-ad-client="ca-pub-9991075173652741"
+       data-ad-slot="6441840757"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+
+<div class="content">
+
+  <h2>How it works</h2>
+  <ul class="feature-list">
+    <li>
+      <div class="feat-ico">📍</div>
+      <div class="feat-text">
+        <strong>Real-time GPS tracking</strong>
+        <span>The app uses your phone's GPS to track your position as you drive, with no data sent to any server.</span>
+      </div>
+    </li>
+    <li>
+      <div class="feat-ico">🏫</div>
+      <div class="feat-text">
+        <strong>School zone detection</strong>
+        <span>Automatically loads schools and educational institutions near you using OpenStreetMap — a free, community-maintained database.</span>
+      </div>
+    </li>
+    <li>
+      <div class="feat-ico">🔔</div>
+      <div class="feat-text">
+        <strong>Multi-mode alerts</strong>
+        <span>Choose sound, vibration, and/or a visual pop-up banner. Get an early warning at 450 m and a full alert at 250 m from the zone.</span>
+      </div>
+    </li>
+    <li>
+      <div class="feat-ico">🗓️</div>
+      <div class="feat-text">
+        <strong>Smart schedule</strong>
+        <span>Alerts only activate when restrictions actually apply: Monday to Friday, 7:00 AM to 5:30 PM, September 1 through June 30.</span>
+      </div>
+    </li>
+    <li>
+      <div class="feat-ico">🔒</div>
+      <div class="feat-text">
+        <strong>100% private</strong>
+        <span>No account required. No data collected. Your location never leaves your device. Zone 30 works entirely on your phone.</span>
+      </div>
+    </li>
+  </ul>
+
+  <div class="info-block">
+    <h3>Active schedule</h3>
+    <div class="info-row"><span class="label">Days</span><span class="val">Monday – Friday</span></div>
+    <div class="info-row"><span class="label">Hours</span><span class="val">7:00 AM – 5:30 PM</span></div>
+    <div class="info-row"><span class="label">Season</span><span class="val">Sep 1 – Jun 30</span></div>
+    <div class="info-row"><span class="label">Alert zone</span><span class="val">250 m radius</span></div>
+    <div class="info-row"><span class="label">Early warning</span><span class="val">450 m radius</span></div>
+    <div class="info-row"><span class="label">Speed limit</span><span class="val">30 km/h</span></div>
+  </div>
+
+  <div class="faq">
+    <h2>Frequently asked questions</h2>
+    <div class="faq-item">
+      <div class="faq-q">Does Zone 30 work without internet?</div>
+      <div class="faq-a">The GPS tracking works offline. An internet connection is needed once when you start monitoring to download the list of schools near you. After that, it works without data.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Why does it need my location?</div>
+      <div class="faq-a">Location access is the core function of the app — it's how Zone 30 knows when you're approaching a school zone. Your location is never stored or shared.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What if a school isn't in the database?</div>
+      <div class="faq-a">Zone 30 uses OpenStreetMap data. If a school is missing, anyone can add it at openstreetmap.org — it's a community-maintained map used by millions worldwide.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Does it work while I use Google Maps?</div>
+      <div class="faq-a">Keep Zone 30 open in a separate tab or split screen alongside your navigation app. The alerts will still sound even if your screen is on another app, as long as the browser tab stays active.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Is it free?</div>
+      <div class="faq-a">Yes, Zone 30 is completely free to use. It's supported by ads, which help keep the service running at no cost to you.</div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <strong style="color:#eaedf5;">⚠️ Important notice</strong><br><br>
+    Zone 30 is a driving aid tool intended to support — not replace — your attention on the road. Always observe posted speed limit signs. School zone regulations may vary by location and are subject to change. The developer assumes no liability for fines, accidents, or any consequences arising from use of this app. Always drive responsibly.
+  </div>
+
+</div><!-- /content -->
+
+<div class="cta-wrap">
+  <button class="btn-launch" onclick="launchApp()">▶ Open Zone 30</button>
+  <div class="cta-sub">Free to use · No account needed · Works in your browser</div>
+</div>
+
+</div><!-- /landing -->
+
+<!-- ═══════════════════════════════════════════════════
+     APP SHELL — hidden until user taps launch
+     ═══════════════════════════════════════════════════ -->
+<div id="app-shell" style="display:none;flex-direction:column;height:100dvh;">
+
 <!-- HEADER -->
-<div id="hdr">
+<div id="hdr"
+  style="background:var(--card);border-bottom:1px solid var(--border);padding:11px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:900;">
   <div class="logo">Zone<em>30</em><sup>™</sup></div>
   <div id="sched-pill">MON–FRI · 7:00–17:30<br>SEP 1 – JUN 30</div>
 </div>
@@ -759,6 +969,15 @@ function setStatus(type, msg) {
 
 // ── GO ────────────────────────────────────────────────
 initMap();
+
+function launchApp() {
+  document.getElementById('landing').style.display = 'none';
+  const shell = document.getElementById('app-shell');
+  shell.style.display = 'flex';
+  // Re-initialize map now that container is visible
+  setTimeout(() => { map.invalidateSize(); }, 100);
+}
 </script>
+</div><!-- /app-shell -->
 </body>
 </html>
